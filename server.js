@@ -1,13 +1,15 @@
+const express = require('express');
+const path = require('path');
+const app = express();
+
+app.use(express.json());
+
+// Настройка CORS для разрешения запросов с любых источников (включая GitHub Pages)
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
 });
-
-const express = require('express');
-const path = require('path'); // подключаем модуль для работы с путями
-const app = express();
-app.use(express.json());
 
 // Подключаем раздачу статических файлов из текущей папки
 app.use(express.static(__dirname));
@@ -126,13 +128,14 @@ const db = {
   "бот": ansGreeting
 };
 
-// Главная страница отдает фронтенд
+// Главная страница
 app.get('/', function(req, res) {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// API для обработки сообщений чата
 app.post('/api/message', function(req, res) {
-  let userText = req.body.text.toLowerCase();
+  let userText = req.body.text ? req.body.text.toLowerCase() : "";
   let botAnswer = "Я еще тупой бот, спроси меня про расписание, столовую, проекты или оценки.";
 
   for (let key in db) {
