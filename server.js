@@ -4,6 +4,7 @@ const app = express();
 
 app.use(express.json());
 
+// Настройка CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -18,6 +19,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// API-эндпоинт с актуальной моделью Gemini 2.5
 app.post('/api/message', async (req, res) => {
   const userText = req.body?.text || "";
   const apiKey = process.env.GEMINI_API_KEY;
@@ -27,8 +29,7 @@ app.post('/api/message', async (req, res) => {
   }
 
   try {
-    // Используем стабильный эндпоинт v1
-    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
