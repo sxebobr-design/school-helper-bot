@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Запрос к модели Qwen 2.5 через OpenRouter
+// Быстрый запрос к Qwen через OpenRouter
 app.post('/api/message', async (req, res) => {
   const userText = req.body?.text || "";
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -36,14 +36,15 @@ app.post('/api/message', async (req, res) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'qwen/qwen-2.5-72b-instruct',
+        model: 'qwen/qwen-2.5-coder-32b-instruct', // Лёгкая и спрехбыстрая модель
+        max_tokens: 300, // Ограничение длины для молниеносного ответа
         messages: [
           {
             role: 'system',
             content: `Ты official школьный бот-помощник ГБОУ "Школа № 1770" Москвы (Коломенская наб., 20, директор — Горемыкин М.Ю.).
 В школе есть профильные классы (медицинский, инженерный, медиакласс) и спортклуб "Импульс".
 Заказ питания и выбор меню в нашей школе происходит через портал mos.ru (сервис "Москвёнок").
-ОБЯЗАТЕЛЬНО отвечай СТРОГО на русском языке, коротко, дружелюбно и с легким юмором.`
+ОБЯЗАТЕЛЬНО отвечай СТРОГО на русском языке, максимально коротко (2-3 предложения), дружелюбно и с легким юмором.`
           },
           {
             role: 'user',
