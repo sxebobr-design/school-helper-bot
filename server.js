@@ -4,19 +4,17 @@ const app = express();
 
 app.use(express.json());
 
-// Глобальное разрешение CORS для всех запросов
-app.use(function(req, res, next) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  
+// Жесткие заголовки CORS прямо в коде, чтобы обойти любые блокировки браузера
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
   }
   next();
 });
 
-// Подключаем раздачу статических файлов из текущей папки
 app.use(express.static(__dirname));
 
 const ansSchedule = "Расписание висит на первом этаже возле раздевалки. Или смотри в электронном дневнике.";
@@ -133,14 +131,12 @@ const db = {
   "бот": ansGreeting
 };
 
-// Главная страница
-app.get('/', function(req, res) {
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// API для обработки сообщений чата
-app.post('/api/message', function(req, res) {
-  let userText = req.body.text ? req.body.text.toLowerCase() : "";
+app.post('/api/message', (req, res) => {
+  let userText = req.body && req.body.text ? req.body.text.toLowerCase() : "";
   let botAnswer = "Я еще тупой бот, спроси меня про расписание, столовую, проекты или оценки.";
 
   for (let key in db) {
@@ -154,6 +150,6 @@ app.post('/api/message', function(req, res) {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, function() {
+app.listen(PORT, () => {
   console.log("Бот запущен на порту " + PORT);
 });
