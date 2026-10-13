@@ -4,6 +4,7 @@ const app = express();
 
 app.use(express.json());
 
+// Настройка CORS для работы с любыми фронтендами
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -20,49 +21,45 @@ app.get('/', (req, res) => {
 
 app.post('/api/message', async (req, res) => {
   const userText = req.body?.text || "";
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return res.json({ answer: "Ошибка: на сервере не настроен OPENROUTER_API_KEY." });
+    return res.json({ answer: "Ошибка: на сервере не настроен GEMINI_API_KEY." });
   }
 
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'qwen/qwen-2.5-72b-instruct', // Подключаем Qwen 2.5 72B
-        messages: [
-          {
-            role: 'system',
-            content: 'Ты официальный и дружелюбный школьный бот-помощник ГБОУ "Школа № 1770" Москвы (Коломенская наб., 20, директор — Горемыкин М.Ю.). В школе есть профильные классы (медицинский, инженерный, медиакласс) и спортклуб "Импульс". Отвечай коротко, понятным языком и с легким юмором.'
-          },
-          {
-            role: 'user',
-            content: userText
-          }
-        ]
+        contents: [{
+          parts: [{
+            text: `Ты официальный и дружелюбный школьный бот-помощник ГБОУ "Школа № 1770" Москвы (Коломенская наб., 20, директор — Горемыкин М.Ю.).
+В школе есть профильные классы (медицинский, инженерный, медиакласс) и спортклуб "Импульс".
+Заказ питания и выбор меню в нашей школе происходит через портал mos.ru (сервис "Москвёнок").
+ОБЯЗАТЕЛЬНО отвечай СТРОГО на русском языке, коротко, понятным языком и с легким юмором.
+Вопрос: ${userText}`
+          }]
+        }]
       })
     });
 
     const data = await response.json();
 
     if (data.error) {
-      return res.json({ answer: `Ошибка OpenRouter API: ${data.error.message}` });
+      return res.json({ answer: `Ошибка Google API: ${data.error.message}` });
     }
 
-    const botAnswer = data.choices?.[0]?.message?.content;
+    const botAnswer = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!botAnswer) {
-      return res.json({ answer: "Нейросеть вернула пустой ответ. Попробуй еще раз!" });
+      return res.json({ answer: "Нейросеть вернула пустой ответ. Попробуй другой вопрос!" });
     }
     
     res.json({ answer: botAnswer.trim() });
   } catch (err) {
     console.error("Ошибка сервера:", err);
-    res.json({ answer: "Ошибка соединения с сервером Qwen." });
+    res.json({ answer: "Ошибка соединения с сервером нейросети." });
   }
 });
 
