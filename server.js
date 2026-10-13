@@ -4,10 +4,14 @@ const app = express();
 
 app.use(express.json());
 
-// Настройка CORS для разрешения запросов с любых источников (включая GitHub Pages)
+// Настройка CORS и предварительных запросов (OPTIONS) для связи с GitHub Pages
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
   next();
 });
 
