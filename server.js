@@ -27,7 +27,8 @@ app.post('/api/message', async (req, res) => {
   }
 
   try {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Используем актуальную модель gemini-3.8-flash
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -41,7 +42,6 @@ app.post('/api/message', async (req, res) => {
     });
 
     const data = await response.json();
-    console.log("Ответ от Google API:", JSON.stringify(data));
 
     if (data.error) {
       return res.json({ answer: `Ошибка Google API: ${data.error.message}` });
