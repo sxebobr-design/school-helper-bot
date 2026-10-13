@@ -1,40 +1,61 @@
 const express = require('express');
+const path = require('path');
 const app = express();
 
 app.use(express.json());
+
+// Настройка CORS для безопасной связи с GitHub Pages
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
   next();
 });
+
+// Раздача статических файлов сайта
 app.use(express.static(__dirname));
 
-const rules = [
-  { keys: ["расписан", "урок", "пар", "кабинет", "звонок"], ans: "Расписание висит на первом этаже возле раздевалки или в электронном дневнике." },
-  { keys: ["столов", "еда", "обед", "буфет", "пицц"], ans: "Сегодня на обед макароны с сосиской, чай и булочка!" },
-  { keys: ["каникул", "отдых", "четверт"], ans: "Каникулы с 28 октября по 5 ноября. Выходим 6-го." },
-  { keys: ["егэ", "огэ", "экзамен", "консультац"], ans: "Расписание консультаций смотри на сайте школы. Главное — выспаться!" },
-  { keys: ["дежурн", "сменк", "обувь"], ans: "График дежурств на доске информации. Сменку проверять обязательно!" },
-  { keys: ["опоздал", "проспал", "прогул"], ans: "Если опоздал — бегом за дневником к завучу, потом в класс." },
-  { keys: ["домашк", "задали", "д/з"], ans: "Домашку смотри в электронном дневнике." },
-  { keys: ["проект", "конкурс", "олимпиад"], ans: "Школьные проекты сдаем до конца месяца. Защита в актовом зале." },
-  { keys: ["матеш", "алгебр", "геометри"], ans: "Алгебра и геометрия в 305-м кабинете." },
-  { keys: ["информ", "питон", "python", "программирован"], ans: "Информатика на 3 этаже в 312 кабинете. Готовься к ЕГЭ по Питону!" },
-  { keys: ["директор", "завуч"], ans: "Директор в 201 кабинете, завуч в 202." },
-  { keys: ["потерял", "забыл", "наушник"], ans: "Все потеряшки несут на вахту к охраннику." },
-  { keys: ["курит", "вейп", "парит", "туал"], ans: "В туалетах не парить, за школой не курить!" },
-  { keys: ["оценк", "двойк", "журнал", "долг"], ans: "Оценки в электронном журнале. Исправляй до конца недели!" },
-  { keys: ["медпункт", "врач", "голова", "справк"], ans: "Медпункт на первом этаже налево. Работают до 15:00." },
-  { keys: ["секци", "кружок", "спортзал"], ans: "После уроков работает спортзал и кружок программирования." },
-  { keys: ["привет", "хай", "ку", "бот"], ans: "Привет! Спроси меня про расписание, столовую, экзамены или оценки." }
-];
-
-app.post('/api/message', (req, res) => {
-  const text = (req.body?.text || "").toLowerCase();
-  const match = rules.find(r => r.keys.some(k => text.includes(k)));
-  res.json({ answer: match ? match.ans : "Я еще учусь, спроси про расписание, столовую или оценки." });
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(process.env.PORT || 3000);
+// API-эндпоинт для связи с ИИ-помощником школы № 1770
+app.post('/api/message', async (req, res) => {
+  const userText = req.body?.text || "";
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    return res.json({ answer: "Ошибка: на сервере не настроен GEMINI_API_KEY." });
+  }
+
+  try {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `Ты официальный, крутой и дружелюбный школьный бот-помощник ГБОУ "Школа № 1770" города Москвы (адрес: Коломенская набережная, д. 20, директор — Горемыкин Михаил Юрьевич). В школе есть профильные классы (медицинский, инженерный, медиакласс), волонтерский отряд и спортивный клуб "Импульс". Отвечай на вопросы учеников коротко, понятно, с юмором и с учетом специфики школы № 1770. Вопрос ученика: ${userText}`
+          }]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const botAnswer = data.candidates?.[0]?.content?.parts?.[0]?.text || "Я задумался... Спроси что-нибудь другое про школу!";
+    
+    res.json({ answer: botAnswer.trim() });
+  } catch (err) {
+    console.error("Ошибка Gemini API:", err);
+    res.json({ answer: "Нейросеть ушла на переменку, попробуй отправить сообщение еще раз через секунду!" });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Бот Школы 1770 успешно запущен на порту ${PORT}`);
+});
